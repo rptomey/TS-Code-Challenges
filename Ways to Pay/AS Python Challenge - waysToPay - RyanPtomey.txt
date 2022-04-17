@@ -1,0 +1,184 @@
+####################### READ ME FIRST ###########################
+# This file contains 3 attempts in order to show how I          #
+# approached this problem...                                    #
+#                                                               #
+# The first attempt was wrong because the results were          #
+# significantly inflated. It could not account for duplicate    #
+# permutations like [1,1,1] and [1,1,1].                        #
+#                                                               #
+# The second attempt is not necessarily "Pythonic", but I       #
+# would pick it as my main solution because I arrived           #
+# at it independent of outside help. It produces the correct    #
+# results and runs surprisingly fast, so I'm happy with it.     #
+# Accordingly, the prescribed `waysToPay` function exists       #
+# only within this subset of the code below.                    #
+#                                                               #
+# The third attempt leveraged inspiration from stackoverflow,   #
+# but frankly, I don't like it as much because its handling     #
+# of an input of 0 feels clumsy.                                #
+#                                                               #
+# This code may be run by calling `waysToPay()` with an         #
+# argument of any integer of 0 or greater.                      #
+#################################################################
+
+####################### ATTEMPT 1 - START #######################
+# A nested looping approach based on floor division and modulo division
+
+# Overall plan is to figure out how many outer loops there need to be (based on using $5 coins),
+# then figure out how many inner loops there would be each time (based on $2 coins) if we were actually generating the combinations.
+
+# Instead of generating every single combination, next, I will figure out the span (count of least coins --> count of most coins)
+# for each inner loop, then use a factorial to figure out how many permutations would come from those counts.
+import math
+
+# Function to figure out how many times we would need to loop through an amount to satisfy all possible amounts of a given coin.
+# To illustrate: 20 could take four 5s, three 5s, two 5s, or one 5.
+def how_many_loops(amount, coin):
+    return amount // coin
+
+# Function to figure out the count of least coins and the count of most coins.
+# To illustrate, making $20 without any $5 coins could be as few as ten $2 coins or as many as twenty $1 coins.
+def span_of_loops(amount, fives):
+    max = amount - (5 * fives) + fives
+    ones = max - fives
+    if ones % 2 == 0:
+        min = ones // 2 + fives
+    else:
+        min = ones // 2 + 1 + fives
+    return min, max
+
+# print(span_of_loops(20,0)) resulted in `(10, 20)` as expected.
+
+# Function to figure out how many permutations there are of a given number of coins using factorials.
+def sum_of_factorials(span):
+    min = span[0]
+    max = span[1]
+    permutation_subtotal = 0
+    for coin_count in range(min, max+1):
+        permutation_subtotal += math.factorial(coin_count)
+
+    return permutation_subtotal
+
+# Function to solve the prompt using the helper functions above.
+def ways_to_pay_wrong(amount):
+    # Establish a counter for the overall total number of permutations.
+    permutation_total = 0
+
+    five_loop_count = how_many_loops(amount, 5)
+
+    # Loop from using the most $5 coins possible to zero $5 coins.
+    for fives in range(five_loop_count, -1, -1):
+        loop_span = span_of_loops(amount, fives)
+        print(loop_span)
+        permutation_total += sum_of_factorials(loop_span)
+
+    return permutation_total
+
+# print(waysToPay(3)) results in `8` instead of the expected `3`.
+# `[2,1]` is being handled correctly as `math.factorial(2) == 2`
+# However, `math.factorial(3) == 6`, so it thinks [1,1,1] can be arranged in 6 different ways.
+
+# Since these will all live in one .txt file, I have renamed my function to avoid interference.
+
+####################### ATTEMPT 1 - END #########################
+
+####################### ATTEMPT 2 - START #######################
+# A recursive approach based on a global counter and a self-referencing function.
+
+# Overall plan is to start with an input total, create 3 branches where 1, 2, and 5 are subtracted from the total,
+# then keep creating new sub-branches for every subtraction where the difference is greater than 0.
+
+# To elaborate, a difference of 1 or more means we still need more coins to reach the total.
+# Reaching 0 represents a combination of 1s, 2s, and 5s that exactly match the total, so any time we hit 0, we increase the global counter.
+# Conversely, going below 0 means that branch isn't a valid combination.
+
+# Establish a global counter and set to zero.
+combination_total = 0
+
+# This is our recursive function.
+def subtract_and_branch(amount):
+    global combination_total
+
+    # Start exploring what we do after taking 1 from the amount...
+    if amount - 1 > 0:
+        subtract_and_branch(amount - 1)
+    elif amount - 1 == 0:
+        combination_total +=1
+
+    # Start exploring what we do after taking 2 from the amount...        
+    if amount - 2 > 0:
+        subtract_and_branch(amount - 2)
+    elif amount - 2 == 0:
+        combination_total +=1
+
+    # Start exploring what we do after taking 5 from the amount...
+    if amount - 5 > 0:
+        subtract_and_branch(amount - 5)
+    elif amount - 5 == 0:
+        combination_total +=1
+
+# Although it could be optimized, this solution is my choice as I came to it on my own.
+def waysToPay(total):
+    # Make sure if the function runs more than once that we're always starting fresh.
+    global combination_total
+    combination_total = 0
+
+    # Kick off the recursion by calling the function on the original input.
+    subtract_and_branch(total)
+
+    # Once recursion has stopped, the global variable will have our answer.
+    return combination_total
+    
+# This loop matched all values supplied for data validation for inputs of 0 through 25:
+# for i in range(26):
+    # print(f'A total of {i} has {waysToPay(i)} ways to pay.')
+# Bonus: the whole loop ran in less than 1 second.
+    
+####################### ATTEMPT 2 - END #########################
+
+####################### ATTEMPT 3 - START #######################
+# An externally-resourced recursive solution that avoids using a global variable.
+
+# Although I choose the function produced by attempt 2 as my canonical solution,
+# I have heard that using global variables isn't "Pythonic". Regardless of how
+# important that idea is, I wanted to see how it might be done without a global variable.
+
+# This approach uses a similar logic, but it was informed by this comment
+# on stackoverflow: https://stackoverflow.com/a/25773380
+
+# This function digs until it is able to return a 1 or a 0 for all paths,
+# then works its way back up, returning the sum of all 1s and 0s that it found.
+def recurse_to_sum(amount):
+    # Reaching an amount less than 0 means the branch isn't a valid combination.
+    if amount < 0:
+        return 0
+    # Reaching an amount of 0 means that the path has exactly summed to the total,
+    # although this has the side effect of incorrectly producing a result of 1
+    # for a total input of 0.
+    elif amount == 0:
+        return 1
+    # Reaching any other amount means we need to keep digging.
+    else:
+        branches_of_amount_minus_1 = recurse_to_sum(amount-1)
+        branches_of_amount_minus_2 = recurse_to_sum(amount-2)
+        branches_of_amount_minus_5 = recurse_to_sum(amount-5)
+        # After exploring all branches, add and return whatever they returned.
+        return branches_of_amount_minus_1 + branches_of_amount_minus_2 + branches_of_amount_minus_5
+
+# This function is also named to avoid interfering with my final answer.
+def ways_to_pay_without_global_var(total):
+    # Because the recursive function returns 1 for an input of 0,
+    # we'll just manually handle that input.
+    if total == 0:
+        return 0
+    else:
+        # Kick off the recursion by calling the function on the original input.
+        return recurse_to_sum(total)
+
+# After adjusting to manually handle 0s, this loop matched all values supplied for
+# data validation for inputs of 0 through 25:
+# for i in range(26):
+    # print(f'A total of {i} has {ways_to_pay_without_global_var(i)} ways to pay.')
+# Note: I could not perceive any difference in performance.
+
+####################### ATTEMPT 3 - END #########################

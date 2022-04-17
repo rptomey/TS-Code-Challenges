@@ -1,0 +1,49 @@
+# An approach using a while loop and built-in list methods.
+
+# This code may be executed by supplying the `packageFruits()`
+# function with a list of strings, and it should run in an amount
+# of time proportional to the input (linear), so I am satisfied
+# with it as my submission.
+
+# Function to take a list, then return a nested list.
+# Sub-lists should have a maximum length of 3,
+# and original order should be maintained.
+def packageFruits(unpackaged_fruits):
+    # Create an empty list that we'll return later
+    packaged_list = []
+
+    # Create a temp list that will continually be filled up to 3,
+    # then inserted into the packaged_list.
+    temp_list = []
+
+    # Keep going until we're out of fruits in our input.
+    while len(unpackaged_fruits) > 0:
+        # The `.pop()` method does double duty, both removing
+        # and returning the list element at the specified index.
+        fruit = unpackaged_fruits.pop(0)
+
+        temp_list.append(fruit)
+
+        # Once we have 3 fruits in our temp_list OR once we're
+        # out of fruits awaiting packaging, add them to the packaged_list.
+        if len(temp_list) == 3 or len(unpackaged_fruits) == 0:
+            # The `.append()` method preserves the properties of what
+            # we're adding, so appending a list won't try to do anything
+            # too clever, like just adding its contents directly.
+            packaged_list.append(temp_list)
+
+            # Reset temp_list so that we're ready to fill it again.
+            temp_list = []
+
+    # After we're out of unpackaged_fruits, return the list of lists.
+    return packaged_list
+
+# These tests worked as expected:
+
+# test = [1,2,3,4,5,6,7,8,9]
+# print(packageFruits(test))
+# Resulted in `[[1, 2, 3], [4, 5, 6], [7, 8, 9]]`
+
+# str_test = ["apple", "orange", "banana", "pear", "pineapple", "kiwi", "mango", "strawberries", "raspberries", "blueberries"]
+# print(packageFruits(str_test))
+# Resulted in `[['apple', 'orange', 'banana'], ['pear', 'pineapple', 'kiwi'], ['mango', 'strawberries', 'raspberries'], ['blueberries']]`
