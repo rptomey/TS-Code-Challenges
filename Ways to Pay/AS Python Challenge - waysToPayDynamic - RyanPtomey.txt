@@ -1,0 +1,60 @@
+# An approach that checks for solved answers before trying to do any type of recursion.
+
+# Run the code by calling the waysToPay function with at least one argument.
+# By default, it will use coins 1, 2, and 5; however, other combinations may be supplied as arguments
+# via either a list or additional comma-separated arguments.
+
+# Example usage:
+# waysToPay(10,2,10)
+# waysToPay(40,[1,2,5])
+# waysToPay(25)
+
+def waysToPay(total, *coin_input):
+    # A value of 0 can't be satisfied by any amount of coins.
+    if total == 0:
+        return 0
+    else:
+        if len(coin_input) > 1:
+            coins = set(coin_input)
+        elif len(coin_input) == 1:
+            coins = set(coin_input[0])
+        else:
+            coins = {1,2,5}
+        
+        # Initialize an array for every possible total up to what we're solving for.
+        # Using a starting value of -1 so the totals we haven't solved are obvious.
+        solved_totals = [-1] * (total + 1)
+        
+        # Work our way up from 1 to the total, until we have an answer.
+        for i in range(1,total + 1):
+            # Make sure the amount can even be paid with the coins available.
+            if i < min(coins):
+                solved_totals[i] == 0
+            else:
+                # Populate the current position with the result of our helper function.
+                solved_totals[i] = recurse_or_sum(i, coins, solved_totals)
+
+        # Get the value stored in the appropriate position in the list of `solved_totals`.
+        return solved_totals[total]
+
+# Helper function that will determine values by checking for 0s, checking for previous solutions, or recursing.
+def recurse_or_sum(position, coin_set, solved_list):
+    # Regardless of what we find, we at least want to change the positions we've checked from -1 to 0.
+    temp_subtotal = 0
+
+    # Follow all the branches to see how they contribute to the temporary subtotal.
+    for coin in coin_set:
+        # Make sure looking for that total won't go outside the list first.
+        if position - coin >= 0:
+            # If the coin zeroes it out, we know there's at least one valid combo there...
+            if position - coin == 0:
+                temp_subtotal += 1
+            # If not, see if we already have an answer stored before digging further...
+            elif solved_list[position - coin] > -1:
+                temp_subtotal += solved_list[position - coin]
+            # If neither applies, we resort to recursion.
+            else:
+                temp_subtotal += recurse_or_sum(position - coin, coin_set, solved_list)
+    
+    # Once we've followed all the branches, return the subtotal.
+    return temp_subtotal
